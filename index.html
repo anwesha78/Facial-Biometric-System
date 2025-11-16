@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Facial Attendance</title>
+</head>
+<body>
+    <h1>Facial Attendance System</h1>
+    <video id="video" width="400" height="300" autoplay></video>
+    <button id="captureBtn">Mark Attendance</button>
+    <canvas id="canvas" width="400" height="300" style="display:none;"></canvas>
+    <p id="status"></p>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureBtn = document.getElementById('captureBtn');
+        const status = document.getElementById('status');
+
+        // Access the webcam
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => { video.srcObject = stream; })
+            .catch(err => { console.error(err); });
+
+        captureBtn.addEventListener('click', () => {
+            // Draw video frame to canvas
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Get base64 image
+            const imageBase64 = canvas.toDataURL('image/jpeg').split(',')[1];
+
+            // Send to Lambda API
+            fetch('YOUR_DETECTATTENDANCE_API_URL', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: imageBase64 })
+            })
+            .then(res => res.json())
+            .then(data => {
+                status.innerText = data.message;
+            })
+            .catch(err => {
+                console.error(err);
+                status.innerText = "Error marking attendance.";
+            });
+        });
+    </script>
+</body>
+</html>

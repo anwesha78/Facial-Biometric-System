@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mark Attendance</title>
+<style>
+    body {
+        font-family: 'Segoe UI', sans-serif;
+        background: linear-gradient(to right, #43cea2, #185a9d);
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+        padding: 20px;
+    }
+    h1 { margin-bottom: 10px; }
+    button {
+        padding: 12px 25px;
+        background-color: #ffb74d;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        color: white;
+        font-weight: bold;
+        margin-top: 10px;
+    }
+    button:hover { background-color: #ff9800; }
+    video {
+        border-radius: 10px;
+        border: 3px solid #fff;
+        margin: 15px 0;
+    }
+    #status { margin-top: 15px; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<h1>Mark Attendance</h1>
+
+<video id="video" width="300" height="300" autoplay></video>
+<button onclick="captureAttendance()">Mark Attendance</button>
+<p id="status"></p>
+
+<script>
+const video = document.getElementById('video');
+navigator.mediaDevices.getUserMedia({ video: true })
+.then(stream => video.srcObject = stream)
+.catch(err => alert("Camera error: " + err));
+
+function captureAttendance() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 300; canvas.height = 300;
+    canvas.getContext('2d').drawImage(video, 0, 0, 300, 300);
+    const imageBase64 = canvas.toDataURL("image/jpeg").split(",")[1];
+
+    document.getElementById('status').innerText = "Recognizing face...";
+
+    fetch("https://xm323dgcya.execute-api.us-east-1.amazonaws.com/attendance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ Image: imageBase64 })
+    })
+    .then(res => res.json())
+    .then(data => document.getElementById('status').innerText = data.message || JSON.stringify(data))
+    .catch(err => document.getElementById('status').innerText = "Error: " + err);
+}
+</script>
+
+</body>
+</html>

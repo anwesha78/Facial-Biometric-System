@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Mark Attendance</title>
+  <style>
+    table { border-collapse: collapse; width: 70%; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background-color: #4e54c8; color: white; }
+    button { margin-top: 20px; padding: 10px 20px; background: #ff6f61; color: white; border: none; border-radius: 5px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>Mark Attendance</h1>
+  <table id="studentsTable">
+    <thead>
+      <tr>
+        <th>Student ID</th>
+        <th>Name</th>
+        <th>Present</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <button onclick="submitAttendance()">Submit Attendance</button>
+
+<script>
+const apiUrlGetStudents = "https://xm323dgcya.execute-api.us-east-1.amazonaws.com/register";  // GET all students
+const apiUrlMarkAttendance = "https://xm323dgcya.execute-api.us-east-1.amazonaws.com/attendance";  // POST attendance
+
+// Load students
+fetch(apiUrlGetStudents)
+.then(res => res.json())
+.then(data => {
+    const tbody = document.querySelector("#studentsTable tbody");
+    // Adjust if your register API returns differently; here assuming: { students: [...] }
+    const students = data.students || [];
+    students.forEach(student => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${student.StudentId}</td>
+            <td>${student.Name}</td>
+            <td><input type="checkbox" data-id="${student.StudentId}"></td>
+        `;
+        tbody.appendChild(tr);
+    });
+})
+.catch(err => alert("Error loading students: " + err));
+
+// Submit attendance
+function submitAttendance() {
+    const checkboxes = document.querySelectorAll("input[type='checkbox']");
+    const today = new Date().toISOString().split('T')[0];  // YYYY-MM-DD
+    const attendance = [];
+
+    checkboxes.forEach(cb => {
+        attendance.push({
+            Date: today,
+            StudentId: cb.dataset.id,
+            Status: cb.checked ? "Present" : "Absent"
+        });
+    });
+
+    fetch(apiUrlMarkAttendance, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({attendance})
+    })
+    .then(res => res.json())
+    .then(msg => alert(msg.message || JSON.stringify(msg)))
+    .catch(err => alert("Error: " + err));
+}
+</script>
+</body>
+</html>
